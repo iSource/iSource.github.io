@@ -1,37 +1,117 @@
-## Welcome to GitHub Pages
+<style type="text/css">
+    h1 { counter-reset: h2counter; }
+    h2 { counter-reset: h3counter; }
+    h3 { counter-reset: h4counter; }
+    h4 { counter-reset: h5counter; }
+    h5 { counter-reset: h6counter; }
+    h6 { }
+    h2:before {
+      counter-increment: h2counter;
+      content: counter(h2counter) ".\0000a0\0000a0";
+    }
+    h3:before {
+      counter-increment: h3counter;
+      content: counter(h2counter) "."
+                counter(h3counter) ".\0000a0\0000a0";
+    }
+    h4:before {
+      counter-increment: h4counter;
+      content: counter(h2counter) "."
+                counter(h3counter) "."
+                counter(h4counter) ".\0000a0\0000a0";
+    }
+    h5:before {
+      counter-increment: h5counter;
+      content: counter(h2counter) "."
+                counter(h3counter) "."
+                counter(h4counter) "."
+                counter(h5counter) ".\0000a0\0000a0";
+    }
+    h6:before {
+      counter-increment: h6counter;
+      content: counter(h2counter) "."
+                counter(h3counter) "."
+                counter(h4counter) "."
+                counter(h5counter) "."
+                counter(h6counter) ".\0000a0\0000a0";
+    }
+</style>
 
-You can use the [editor on GitHub](https://github.com/iSource/m-g.pub/edit/master/index.md) to maintain and preview the content for your website in Markdown files.
+# C++ : 模板编程
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## 非类型模板参数(Nontype Template Parameter)
 
-### Markdown
+### 非类型类模板参数(Nontype Class Template Parameter)
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+使用者自己定义,但是每个模板实例都是不同的类型;也可以为模板参数提供默认值；
+Example:
 
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```c++
+template<int MAXSIZE=100>
+class array{
+    private:
+        int num[MAXSIZE];
+    public:
+        void print(){
+            std::cout << sizeof(num) / sizeof(int) << std::endl;
+        }
+};
+array<60> int60arrray;
+array<> defaultArray;
+int main(int argc, const char *argv[])
+{
+    int60arrray.print(); /* 60 */
+    defaultArray.print(); /* 100 */
+    return 0;
+}
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+### 非类型函数模板参数(Nontype Function Template Parameter)
 
-### Jekyll Themes
+Example:
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/iSource/m-g.pub/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+```c++
+template<int count>
+int sumUp(int x) {
+    return x + count;
+}
+int main(int argc, const char *argv[])
+{
+    std::cout << sumUp<10>(60) <<std::endl; /* 70 */
+    return 0;
+}
+```
 
-### Support or Contact
+### Restrictions
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+```c++
+/* double, float或者类类型*/
+template<double count> /* error : A non-type template parameter cannot have type 'double' before C++20 */
+
+/* 字符串常量*/
+template<char const* name>
+class test{
+
+};
+test<"hello"> t; /* error : "hello" is not a valid template argument for type 'const char*' because string literals can never be used in this context*/
+
+/* 全局指针 */
+template<char const* name>
+class test{
+
+};
+
+char const* s = "hello";
+test<s> t;/* error : 's' is not a valid template argument because 's' is a variable, not the address of a variable*/
+
+/* 全局数组 这样是可以的 */
+template<char const* name>
+class test{
+
+};
+
+char const s[] = "hello";
+test<s> t;
+```
+
+## 类型模板参数(Type Template Parameter)
