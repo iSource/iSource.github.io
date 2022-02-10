@@ -1,37 +1,10 @@
-## Welcome to GitHub Pages
-
-You can use the [editor on GitHub](https://github.com/iSource/m-g.pub/edit/master/index.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+输出：
+```
+origin https://codehub-dg-g.huawei.com/HiCloud_Browser/DataMiningAlgorithm.git (fetch)
+origin  ssh://git@codehub-dg-g.huawei.com:2222/g00510989/DataMiningAlgorithm.git (push)
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/iSource/m-g.pub/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+相当于默认的提交为：
+![image-20210914115033032.png](http://image.huawei.com/tiny-lts/v1/images/4806073e02d22210e1d5684d1e80bf19_1186x336.png@900-0-90-f.png)
+被我们修改为了：
+![image.png](http://image.huawei.com/tiny-lts/v1/images/92a26e19d40f95396716c09f046f647d_1490x336.png@900-0-90-f.png)
