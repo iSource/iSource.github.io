@@ -1,0 +1,1437 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>算术题生成</title>
+  <style>
+    :root {
+      --bg: #edf1f5;
+      --paper: #ffffff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d7e0ea;
+      --accent: #0b766d;
+      --accent-dark: #075d56;
+      --accent-soft: #e5f4f1;
+      --blue-soft: #eaf1ff;
+      --blue-ink: #1d4ed8;
+      --panel-soft: #f7f9fb;
+      --warn: #a16207;
+      --warn-bg: #fff7df;
+      --shadow: 0 18px 48px rgba(31, 41, 55, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      color-scheme: light;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(11, 118, 109, 0.08), transparent 320px),
+        linear-gradient(180deg, #f8fafc 0, var(--bg) 280px, #e8edf3 100%);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    .app-shell {
+      width: min(1320px, 100%);
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 780;
+      line-height: 1.25;
+    }
+
+    .topbar-subtitle {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    .status {
+      min-height: 26px;
+      padding: 4px 9px;
+      border: 1px solid #dbe2ea;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 334px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .control-panel {
+      position: sticky;
+      top: 12px;
+      padding: 0;
+      background: var(--paper);
+      border: 1px solid rgba(215, 224, 234, 0.9);
+      border-radius: 8px;
+      box-shadow: 0 18px 36px rgba(31, 41, 55, 0.08);
+      overflow: hidden;
+    }
+
+    .control-panel::before {
+      content: "";
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #2563eb 52%, #d97706);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px 10px;
+      border-bottom: 1px solid #e4e9ee;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0, #f8fafb 100%);
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 760;
+      line-height: 1.2;
+    }
+
+    .panel-subtitle {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .panel-pill {
+      flex: 0 0 auto;
+      padding: 4px 8px;
+      border: 1px solid #b9ddd7;
+      border-radius: 999px;
+      color: #075d56;
+      background: var(--accent-soft);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 11px 12px 0;
+    }
+
+    .section-label {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 2px 0 -1px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
+    .section-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: #e7edf3;
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .field.wide {
+      grid-column: 1 / -1;
+    }
+
+    .field label,
+    .field-caption,
+    .check-field {
+      font-size: 12.5px;
+      font-weight: 650;
+      color: #475467;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      min-height: 34px;
+      padding: 5px 8px;
+      border: 1px solid #c8d0d8;
+      border-radius: 6px;
+      background: #fbfcfe;
+      color: var(--ink);
+      font-size: 14px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .field select {
+      appearance: none;
+      padding-right: 28px;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 15px 15px;
+    }
+
+    .field input:hover,
+    .field select:hover {
+      border-color: #aab7c5;
+      background-color: #ffffff;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(var(--segments, 2), minmax(0, 1fr));
+      gap: 3px;
+      padding: 3px;
+      border: 1px solid #d6dee7;
+      border-radius: 7px;
+      background: #eef3f7;
+      box-shadow: inset 0 1px 2px rgba(31, 41, 55, 0.06);
+    }
+
+    .segmented input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .segmented label {
+      min-height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      color: #516071;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      user-select: none;
+      transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .segmented label:hover {
+      color: #243346;
+    }
+
+    .segmented input:checked + label {
+      color: #063f3b;
+      background: linear-gradient(180deg, #ffffff 0, #f7fbfa 100%);
+      box-shadow: 0 1px 4px rgba(31, 41, 55, 0.16);
+    }
+
+    .segmented input:focus + label {
+      outline: 3px solid rgba(15, 118, 110, 0.16);
+      outline-offset: 1px;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    button:focus {
+      outline: 3px solid rgba(15, 118, 110, 0.18);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+
+    .field input:disabled,
+    .field select:disabled {
+      background: #eef1f4;
+      color: #98a2b3;
+    }
+
+    .inline-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 86px;
+      gap: 7px;
+    }
+
+    .check-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid #dbe2ea;
+      border-radius: 6px;
+      background: var(--panel-soft);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .check-field:hover {
+      border-color: #c4d0dc;
+      background: #ffffff;
+    }
+
+    .check-field input {
+      appearance: none;
+      position: relative;
+      flex: 0 0 auto;
+      width: 30px;
+      height: 18px;
+      border: 1px solid #c6d0da;
+      border-radius: 999px;
+      background: #e5ebf1;
+      accent-color: var(--accent);
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .check-field input::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(31, 41, 55, 0.25);
+      transition: transform 0.15s ease;
+    }
+
+    .check-field input:checked {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .check-field input:checked::after {
+      transform: translateX(12px);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px 12px 12px;
+      margin-top: 0;
+      border-top: 1px solid #e8edf2;
+      background: #fbfcfe;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--ink);
+      background: #ffffff;
+      border-color: #c8d0d8;
+      box-shadow: 0 1px 1px rgba(31, 41, 55, 0.04);
+      transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    button.primary {
+      grid-column: 1 / -1;
+      min-height: 38px;
+      font-size: 15px;
+    }
+
+    button.primary {
+      color: #ffffff;
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 8px 18px rgba(11, 118, 109, 0.24);
+    }
+
+    button.primary:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(11, 118, 109, 0.28);
+    }
+
+    button.secondary {
+      color: #344054;
+      background: linear-gradient(180deg, #ffffff 0, #f8fafc 100%);
+    }
+
+    button.secondary:hover {
+      border-color: #9fb0c0;
+      background: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(31, 41, 55, 0.08);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      color: #98a2b3;
+      background: #eef1f4;
+      border-color: #d7dde3;
+    }
+
+    .preview {
+      min-width: 0;
+    }
+
+    .preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 30px;
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 0 2px;
+    }
+
+    .preview-title {
+      color: #344054;
+      font-size: 14px;
+      font-weight: 760;
+    }
+
+    #previewMeta {
+      max-width: 72%;
+      padding: 4px 8px;
+      overflow: hidden;
+      border: 1px solid #d9e2ec;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .preview-stage {
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, #dce3eb 0, #e7ecf2 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    #printRoot {
+      width: 210mm;
+      margin: 0 auto;
+      zoom: var(--preview-scale, 1);
+    }
+
+    .worksheet {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto 18px;
+      padding: 14mm 14mm 12mm;
+      background: var(--paper);
+      color: #111827;
+      box-shadow: 0 20px 44px rgba(31, 41, 55, 0.16);
+      page-break-after: always;
+    }
+
+    .worksheet:last-child {
+      margin-bottom: 0;
+    }
+
+    .sheet-title {
+      margin: 0 0 7mm;
+      text-align: center;
+      font-size: 20pt;
+      font-weight: 760;
+      line-height: 1.2;
+    }
+
+    .sheet-meta {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 4mm;
+      margin-bottom: 9mm;
+      font-size: 11pt;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+
+    .meta-line {
+      display: inline-block;
+      width: 15mm;
+      border-bottom: 1px solid #111827;
+      transform: translateY(-1px);
+    }
+
+    .meta-line.score-line {
+      width: 11mm;
+    }
+
+    .meta-fixed-value {
+      font-weight: 650;
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--columns, 2), minmax(0, 1fr));
+      column-gap: 7mm;
+      row-gap: var(--row-gap, 3.5mm);
+      align-items: start;
+    }
+
+    .question-sheet .problem-grid {
+      grid-auto-rows: var(--problem-row-height, 17mm);
+      row-gap: 0;
+    }
+
+    .question-sheet.oral .problem-grid {
+      row-gap: 2mm;
+    }
+
+    .question-sheet .problem-item {
+      min-width: 0;
+      font-size: var(--problem-size, 12pt);
+      line-height: 1.28;
+    }
+
+    .problem-line {
+      display: flex;
+      align-items: baseline;
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    .problem-number {
+      flex: 0 0 var(--number-width, 2.2em);
+      color: #98a2b3;
+      font-size: 0.76em;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      padding-right: 0.8mm;
+      text-align: right;
+    }
+
+    .equation {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+
+    .answer-space {
+      display: inline-block;
+      flex: 1 1 auto;
+      min-width: var(--answer-space-width, 12mm);
+      height: 1em;
+      margin-left: 2mm;
+    }
+
+    .scratch-area {
+      height: var(--scratch-height, 20mm);
+      margin: 2mm 0 0 var(--number-width, 2.2em);
+      border: 1px dashed #cfd6dd;
+      border-radius: 4px;
+      background: #ffffff;
+    }
+
+    .question-sheet.oral .scratch-area {
+      display: none;
+    }
+
+    .worksheet.compact {
+      --problem-size: 10.5pt;
+      --answer-space-width: 10mm;
+      --number-width: 2.8em;
+    }
+
+    .answer-sheet {
+      --columns: 4;
+      --problem-size: 10.5pt;
+      --row-gap: 2.7mm;
+      --number-width: 2.5em;
+    }
+
+    .answer-sheet .sheet-title {
+      margin-bottom: 10mm;
+    }
+
+    .answer-sheet .problem-item {
+      display: flex;
+      align-items: baseline;
+      min-width: 0;
+      font-size: var(--problem-size, 11pt);
+      line-height: 1.34;
+      white-space: nowrap;
+      gap: 2mm;
+    }
+
+    .answer-equation {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+
+    .answer-value {
+      font-weight: 650;
+    }
+
+    .message {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--warn);
+      background: var(--warn-bg);
+      border: 1px solid #f2d27a;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .message[hidden] {
+      display: none;
+    }
+
+    @media (max-width: 860px) {
+      .app-shell {
+        padding: 16px;
+      }
+
+      .topbar {
+        display: grid;
+      }
+
+      .topbar h1 {
+        font-size: 22px;
+      }
+
+      .status {
+        text-align: left;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .control-panel {
+        position: static;
+      }
+
+      .preview-stage {
+        padding: 12px;
+      }
+
+      .panel-head {
+        padding: 10px 12px;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 210mm;
+        min-height: 297mm;
+        background: #ffffff;
+      }
+
+      .app-shell {
+        width: 210mm;
+        margin: 0;
+        padding: 0;
+      }
+
+      .topbar,
+      .control-panel,
+      .preview-head {
+        display: none;
+      }
+
+      .layout,
+      .preview,
+      .preview-stage {
+        display: block;
+        width: 210mm;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+        border: 0;
+        background: #ffffff;
+      }
+
+      #printRoot {
+        width: auto;
+        margin: 0;
+        zoom: 1 !important;
+      }
+
+      .worksheet {
+        display: block;
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0;
+        padding: 14mm 14mm 12mm;
+        box-shadow: none;
+        border: 0;
+      }
+
+      .worksheet:last-child {
+        page-break-after: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <div class="topbar">
+      <div>
+        <h1>算术题生成</h1>
+        <div class="topbar-subtitle">为二年级加减法快速生成可打印练习</div>
+      </div>
+      <div id="status" class="status" aria-live="polite"></div>
+    </div>
+
+    <div class="layout">
+      <form id="settingsForm" class="control-panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">练习设置</div>
+            <div class="panel-subtitle">A4 · 100分制</div>
+          </div>
+          <span class="panel-pill">本地生成</span>
+        </div>
+        <div class="control-grid">
+          <div class="section-label">基础</div>
+
+          <div class="field wide">
+            <label for="sheetTitle">题目标题</label>
+            <input id="sheetTitle" name="sheetTitle" type="text" maxlength="40" value="小鱼算术题" placeholder="留空不显示">
+          </div>
+
+          <div class="field wide">
+            <span class="field-caption">题型</span>
+            <div class="segmented" style="--segments: 3">
+              <input id="operationMixed" name="operationType" type="radio" value="mixed" checked>
+              <label for="operationMixed">加减混合</label>
+              <input id="operationAdd" name="operationType" type="radio" value="add">
+              <label for="operationAdd">只加法</label>
+              <input id="operationSub" name="operationType" type="radio" value="sub">
+              <label for="operationSub">只减法</label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="numberRange">数值范围</label>
+            <select id="numberRange" name="numberRange">
+              <option value="20">20以内</option>
+              <option value="50">50以内</option>
+              <option value="100" selected>100以内</option>
+              <option value="1000">1000以内</option>
+            </select>
+          </div>
+
+          <div class="field wide">
+            <label for="questionCount">题目数量</label>
+            <div class="inline-fields">
+              <select id="questionCount" name="questionCount">
+                <option value="20">20题</option>
+                <option value="40" selected>40题</option>
+                <option value="60">60题</option>
+                <option value="80">80题</option>
+                <option value="100">100题</option>
+                <option value="custom">自定义</option>
+              </select>
+              <input id="customCount" name="customCount" type="number" min="1" max="100" value="40" disabled aria-label="自定义题目数量">
+            </div>
+          </div>
+
+          <div class="field wide">
+            <span class="field-caption">练习版式</span>
+            <div class="segmented" style="--segments: 2">
+              <input id="modeVertical" name="practiceMode" type="radio" value="vertical" checked>
+              <label for="modeVertical">竖式版</label>
+              <input id="modeOral" name="practiceMode" type="radio" value="oral">
+              <label for="modeOral">口算版</label>
+            </div>
+          </div>
+
+          <div class="section-label">规则</div>
+
+          <div class="field">
+            <label for="carryRule">加法进位</label>
+            <select id="carryRule" name="carryRule">
+              <option value="any">不限制</option>
+              <option value="none" selected>不进位</option>
+              <option value="must">必须进位</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="borrowRule">减法退位</label>
+            <select id="borrowRule" name="borrowRule">
+              <option value="any">不限制</option>
+              <option value="none" selected>不退位</option>
+              <option value="must">必须退位</option>
+            </select>
+          </div>
+
+          <div class="section-label">输出</div>
+
+          <label class="check-field" for="includeAnswers">
+            单独生成答案页
+            <input id="includeAnswers" name="includeAnswers" type="checkbox" checked>
+          </label>
+
+          <label class="check-field" for="avoidEasy">
+            避免过易题
+            <input id="avoidEasy" name="avoidEasy" type="checkbox" checked>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button class="primary" type="submit">生成题目</button>
+          <button class="secondary" id="printButton" type="button">打印 / PDF</button>
+          <button class="secondary" id="exportQuestions" type="button">题目页图片</button>
+          <button class="secondary" id="exportAnswers" type="button">答案页图片</button>
+        </div>
+
+        <div id="message" class="message" hidden></div>
+      </form>
+
+      <section class="preview" aria-label="预览">
+        <div class="preview-head">
+          <span class="preview-title">A4 预览</span>
+          <span id="previewMeta"></span>
+        </div>
+        <div class="preview-stage">
+          <div id="printRoot"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("settingsForm");
+    const printRoot = document.getElementById("printRoot");
+    const previewStage = document.querySelector(".preview-stage");
+    const statusEl = document.getElementById("status");
+    const previewMeta = document.getElementById("previewMeta");
+    const messageEl = document.getElementById("message");
+    const numberRange = document.getElementById("numberRange");
+    const questionCount = document.getElementById("questionCount");
+    const customCount = document.getElementById("customCount");
+    const carryRule = document.getElementById("carryRule");
+    const borrowRule = document.getElementById("borrowRule");
+    const includeAnswers = document.getElementById("includeAnswers");
+    const avoidEasy = document.getElementById("avoidEasy");
+    const exportAnswersButton = document.getElementById("exportAnswers");
+
+    let currentProblems = [];
+    let currentSettings = null;
+    let currentDuplicateWarning = false;
+    let settingsDirty = false;
+
+    const operationLabel = {
+      add: "加法",
+      sub: "减法",
+      mixed: "加减混合"
+    };
+
+    const practiceModeLabel = {
+      vertical: "竖式版",
+      oral: "口算版"
+    };
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function updatePreviewScale() {
+      const firstSheet = printRoot.querySelector(".worksheet");
+      if (!firstSheet || !previewStage) return;
+
+      printRoot.style.setProperty("--preview-scale", "1");
+      const stageStyle = getComputedStyle(previewStage);
+      const horizontalPadding = parseFloat(stageStyle.paddingLeft) + parseFloat(stageStyle.paddingRight);
+      const availableWidth = Math.max(240, previewStage.clientWidth - horizontalPadding - 8);
+      const naturalWidth = firstSheet.offsetWidth || 794;
+      const scale = Math.min(1, availableWidth / naturalWidth);
+      printRoot.style.setProperty("--preview-scale", scale.toFixed(4));
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function hasCarry(a, b) {
+      let left = a;
+      let right = b;
+      while (left > 0 || right > 0) {
+        const digitSum = (left % 10) + (right % 10);
+        if (digitSum >= 10) return true;
+        left = Math.floor(left / 10);
+        right = Math.floor(right / 10);
+      }
+      return false;
+    }
+
+    function hasBorrow(a, b) {
+      let left = a;
+      let right = b;
+      let borrow = 0;
+      while (left > 0 || right > 0) {
+        const leftDigit = (left % 10) - borrow;
+        const rightDigit = right % 10;
+        if (leftDigit < rightDigit) return true;
+        borrow = 0;
+        left = Math.floor(left / 10);
+        right = Math.floor(right / 10);
+      }
+      return false;
+    }
+
+    function carryMatches(a, b, rule) {
+      if (rule === "any") return true;
+      const carried = hasCarry(a, b);
+      return rule === "must" ? carried : !carried;
+    }
+
+    function borrowMatches(a, b, rule) {
+      if (rule === "any") return true;
+      const borrowed = hasBorrow(a, b);
+      return rule === "must" ? borrowed : !borrowed;
+    }
+
+    function readSettings() {
+      const selectedCount = questionCount.value;
+      const count = selectedCount === "custom"
+        ? clamp(Number(customCount.value) || 1, 1, 100)
+        : Number(selectedCount);
+
+      if (selectedCount === "custom") {
+        customCount.value = String(count);
+      }
+
+      return {
+        title: document.getElementById("sheetTitle").value.trim(),
+        operationType: document.querySelector("input[name='operationType']:checked").value,
+        max: Number(numberRange.value),
+        count,
+        practiceMode: document.querySelector("input[name='practiceMode']:checked").value,
+        carryRule: carryRule.value,
+        borrowRule: borrowRule.value,
+        includeAnswers: includeAnswers.checked,
+        avoidEasy: avoidEasy.checked
+      };
+    }
+
+    function chooseOperation(type) {
+      if (type === "mixed") {
+        return Math.random() < 0.5 ? "add" : "sub";
+      }
+      return type;
+    }
+
+    function operandMin(max) {
+      if (max >= 1000) return 100;
+      if (max >= 50) return 10;
+      return 1;
+    }
+
+    function isTooEasy(problem) {
+      if (problem.op === "add") {
+        return problem.a === 0 || problem.b === 0;
+      }
+
+      return problem.b === 0 || problem.a === problem.b;
+    }
+
+    function makeCandidate(settings) {
+      const op = chooseOperation(settings.operationType);
+      const min = operandMin(settings.max);
+
+      if (op === "add") {
+        const a = randomInt(min, settings.max - min);
+        const b = randomInt(min, settings.max - a);
+        if (!carryMatches(a, b, settings.carryRule)) return null;
+        const problem = { a, b, op, answer: a + b };
+        if (settings.avoidEasy && isTooEasy(problem)) return null;
+        return problem;
+      }
+
+      const a = randomInt(min, settings.max);
+      const b = randomInt(min, a);
+      if (!borrowMatches(a, b, settings.borrowRule)) return null;
+      const problem = { a, b, op, answer: a - b };
+      if (settings.avoidEasy && isTooEasy(problem)) return null;
+      return problem;
+    }
+
+    function problemKey(problem) {
+      return `${problem.a}:${problem.op}:${problem.b}`;
+    }
+
+    function generateProblems(settings) {
+      const problems = [];
+      const seen = new Set();
+      let duplicateWarning = false;
+      let attempts = 0;
+      const maxAttempts = settings.count * 900;
+
+      while (problems.length < settings.count && attempts < maxAttempts) {
+        attempts += 1;
+        const candidate = makeCandidate(settings);
+        if (!candidate) continue;
+
+        const key = problemKey(candidate);
+        if (seen.has(key)) continue;
+
+        seen.add(key);
+        problems.push(candidate);
+      }
+
+      let duplicateAttempts = 0;
+      while (problems.length < settings.count && duplicateAttempts < maxAttempts) {
+        duplicateAttempts += 1;
+        const candidate = makeCandidate(settings);
+        if (!candidate) continue;
+        duplicateWarning = true;
+        problems.push(candidate);
+      }
+
+      return { problems, duplicateWarning };
+    }
+
+    function opSymbol(op) {
+      return op === "add" ? "+" : "-";
+    }
+
+    function questionLayout(settings) {
+      const columns = 3;
+      const isOral = settings.practiceMode === "oral";
+      const rowsPerPage = isOral ? 18 : (settings.count <= 20 ? 7 : 8);
+      const rowHeightMm = isOral ? 10 : (settings.count <= 20 ? 34 : settings.count <= 40 ? 30 : 28);
+
+      return {
+        columns,
+        rowsPerPage,
+        perPage: columns * rowsPerPage,
+        rowHeightMm,
+        scratchHeightMm: isOral ? 0 : rowHeightMm - 8
+      };
+    }
+
+    function questionColumns(settings) {
+      return questionLayout(settings).columns;
+    }
+
+    function formatPerQuestionScore(count) {
+      const score = 100 / Math.max(1, count);
+      if (Number.isInteger(score)) return String(score);
+      return score.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+    }
+
+    function createSheetHeader(settings, mode) {
+      const fragment = document.createDocumentFragment();
+
+      if (settings.title) {
+        const title = document.createElement("h2");
+        title.className = "sheet-title";
+        title.textContent = mode === "answers" ? `${settings.title} 答案` : settings.title;
+        fragment.appendChild(title);
+      } else if (mode === "answers") {
+        const title = document.createElement("h2");
+        title.className = "sheet-title";
+        title.textContent = "答案";
+        fragment.appendChild(title);
+      }
+
+      if (mode === "questions") {
+        const meta = document.createElement("div");
+        meta.className = "sheet-meta";
+
+        ["姓名", "日期", "用时"].forEach((label) => {
+          const item = document.createElement("div");
+          item.innerHTML = `${label}：<span class="meta-line"></span>`;
+          meta.appendChild(item);
+        });
+
+        const scoreItem = document.createElement("div");
+        scoreItem.innerHTML = `得分：<span class="meta-line score-line"></span> / 100分`;
+        meta.appendChild(scoreItem);
+
+        const perQuestionItem = document.createElement("div");
+        perQuestionItem.innerHTML = `每题：<span class="meta-fixed-value">${formatPerQuestionScore(settings.count)}</span>分`;
+        meta.appendChild(perQuestionItem);
+
+        fragment.appendChild(meta);
+      }
+
+      return fragment;
+    }
+
+    function createQuestionSheet(settings, problems, startIndex) {
+      const layout = questionLayout(settings);
+      const sheet = document.createElement("section");
+      sheet.className = `worksheet question-sheet${settings.max >= 1000 ? " compact" : ""}${settings.practiceMode === "oral" ? " oral" : ""}`;
+      sheet.style.setProperty("--columns", String(layout.columns));
+      sheet.style.setProperty("--problem-row-height", `${layout.rowHeightMm}mm`);
+      sheet.style.setProperty("--scratch-height", `${layout.scratchHeightMm}mm`);
+      sheet.appendChild(createSheetHeader(settings, "questions"));
+
+      const grid = document.createElement("div");
+      grid.className = "problem-grid";
+      problems.forEach((problem, index) => {
+        const item = document.createElement("div");
+        item.className = "problem-item";
+
+        const line = document.createElement("div");
+        line.className = "problem-line";
+
+        const number = document.createElement("span");
+        number.className = "problem-number";
+        number.textContent = `${startIndex + index + 1}.`;
+
+        const equation = document.createElement("span");
+        equation.className = "equation";
+        equation.textContent = `${problem.a} ${opSymbol(problem.op)} ${problem.b} =`;
+
+        const answerSpace = document.createElement("span");
+        answerSpace.className = "answer-space";
+
+        const scratchArea = document.createElement("div");
+        scratchArea.className = "scratch-area";
+
+        line.append(number, equation, answerSpace);
+        item.append(line, scratchArea);
+        grid.appendChild(item);
+      });
+      sheet.appendChild(grid);
+      return sheet;
+    }
+
+    function renderQuestionSheets(settings, problems) {
+      const layout = questionLayout(settings);
+      const sheets = [];
+      for (let start = 0; start < problems.length; start += layout.perPage) {
+        sheets.push(createQuestionSheet(settings, problems.slice(start, start + layout.perPage), start));
+      }
+      return sheets;
+    }
+
+    function renderAnswers(settings, problems) {
+      const sheet = document.createElement("section");
+      sheet.className = "worksheet answer-sheet";
+      sheet.appendChild(createSheetHeader(settings, "answers"));
+
+      const grid = document.createElement("div");
+      grid.className = "problem-grid";
+      problems.forEach((problem, index) => {
+        const item = document.createElement("div");
+        item.className = "problem-item";
+
+        const number = document.createElement("span");
+        number.className = "problem-number";
+        number.textContent = `${index + 1}.`;
+
+        const answer = document.createElement("span");
+        answer.className = "answer-equation";
+        answer.textContent = `${problem.a} ${opSymbol(problem.op)} ${problem.b} = `;
+
+        const answerValue = document.createElement("span");
+        answerValue.className = "answer-value";
+        answerValue.textContent = String(problem.answer);
+
+        answer.appendChild(answerValue);
+        item.append(number, answer);
+        grid.appendChild(item);
+      });
+      sheet.appendChild(grid);
+      return sheet;
+    }
+
+    function renderAll(settings, problems) {
+      printRoot.innerHTML = "";
+      renderQuestionSheets(settings, problems).forEach((sheet) => printRoot.appendChild(sheet));
+      if (settings.includeAnswers) {
+        printRoot.appendChild(renderAnswers(settings, problems));
+      }
+
+      exportAnswersButton.disabled = !settings.includeAnswers;
+      const layout = questionLayout(settings);
+      const pageCount = Math.max(1, Math.ceil(problems.length / layout.perPage));
+      const rangeText = `${settings.max}以内`;
+      previewMeta.textContent = `${operationLabel[settings.operationType]} · ${rangeText} · ${settings.count}题 · ${practiceModeLabel[settings.practiceMode]} · ${layout.columns}栏 · ${pageCount}页`;
+      statusEl.textContent = `已生成 ${problems.length} 题`;
+      requestAnimationFrame(updatePreviewScale);
+    }
+
+    function updateMessage(settings, problems, duplicateWarning) {
+      if (problems.length < settings.count) {
+        messageEl.hidden = false;
+        messageEl.textContent = "当前条件过窄，未能生成足够题目。请放宽进位或退位条件后再试。";
+        return;
+      }
+
+      if (duplicateWarning) {
+        messageEl.hidden = false;
+        messageEl.textContent = "当前条件下可用题目较少，已允许少量重复。";
+        return;
+      }
+
+      messageEl.hidden = true;
+      messageEl.textContent = "";
+    }
+
+    function regenerate() {
+      const settings = readSettings();
+      const result = generateProblems(settings);
+      currentSettings = settings;
+      currentProblems = result.problems;
+      currentDuplicateWarning = result.duplicateWarning;
+      renderAll(settings, result.problems);
+      updateMessage(settings, result.problems, result.duplicateWarning);
+      settingsDirty = false;
+    }
+
+    function updateControlAvailability() {
+      const useCustom = questionCount.value === "custom";
+      customCount.disabled = !useCustom;
+
+      const selectedOperation = document.querySelector("input[name='operationType']:checked").value;
+      carryRule.disabled = selectedOperation === "sub";
+      borrowRule.disabled = selectedOperation === "add";
+    }
+
+    function drawPageBackground(ctx, width, height, offsetY = 0) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, offsetY, width, height);
+      ctx.strokeStyle = "#e5e7eb";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      ctx.strokeRect(36, offsetY + 36, width - 72, height - 72);
+    }
+
+    function drawCenteredText(ctx, text, y, font, color, width) {
+      ctx.font = font;
+      ctx.fillStyle = color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(text, width / 2, y);
+    }
+
+    function drawQuestionImagePage(ctx, settings, problems, startIndex, width, pageHeight, offsetY) {
+      drawPageBackground(ctx, width, pageHeight, offsetY);
+      const marginX = 96;
+      let y = offsetY + 118;
+      if (settings.title) {
+        drawCenteredText(ctx, settings.title, y, "700 38px Arial, sans-serif", "#111827", width);
+        y += 74;
+      }
+
+      ctx.font = "24px Arial, sans-serif";
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "left";
+      const metaY = y;
+      const metaGap = 208;
+      [
+        "姓名：______",
+        "日期：______",
+        "用时：______",
+        "得分：___ / 100分",
+        `每题：${formatPerQuestionScore(settings.count)}分`
+      ].forEach((text, index) => {
+        ctx.fillText(text, marginX + index * metaGap, metaY);
+      });
+
+      y += 78;
+      const layout = questionLayout(settings);
+      const columns = layout.columns;
+      const columnGap = settings.max >= 1000 ? 44 : 48;
+      const columnWidth = (width - marginX * 2 - columnGap * (columns - 1)) / columns;
+      const rowHeight = layout.rowHeightMm * 5.9;
+      const scratchHeight = layout.scratchHeightMm * 5.9;
+      const numberOffset = settings.max >= 1000 ? 54 : 48;
+      ctx.font = `${settings.max >= 1000 ? 24 : 26}px Arial, sans-serif`;
+
+      problems.forEach((problem, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        const x = marginX + column * (columnWidth + columnGap);
+        const lineY = y + row * rowHeight;
+        ctx.fillStyle = "#98a2b3";
+        ctx.font = `${settings.max >= 1000 ? 18 : 19}px Arial, sans-serif`;
+        ctx.fillText(`${startIndex + index + 1}.`, x, lineY);
+        ctx.fillStyle = "#111827";
+        ctx.font = `${settings.max >= 1000 ? 24 : 26}px Arial, sans-serif`;
+        ctx.fillText(`${problem.a} ${opSymbol(problem.op)} ${problem.b} =`, x + numberOffset, lineY);
+
+        if (settings.practiceMode !== "oral") {
+          const scratchX = x + numberOffset;
+          const scratchY = lineY + 19;
+          const scratchWidth = columnWidth - numberOffset;
+          ctx.beginPath();
+          ctx.setLineDash([7, 7]);
+          ctx.strokeStyle = "#cfd6dd";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(scratchX, scratchY, scratchWidth, scratchHeight);
+          ctx.setLineDash([]);
+        }
+      });
+    }
+
+    function drawQuestionImage(settings, problems) {
+      const width = 1240;
+      const pageHeight = 1754;
+      const layout = questionLayout(settings);
+      const pageGap = 40;
+      const pageCount = Math.max(1, Math.ceil(problems.length / layout.perPage));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = pageHeight * pageCount + pageGap * (pageCount - 1);
+      const ctx = canvas.getContext("2d");
+
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+        const start = pageIndex * layout.perPage;
+        const pageProblems = problems.slice(start, start + layout.perPage);
+        drawQuestionImagePage(ctx, settings, pageProblems, start, width, pageHeight, pageIndex * (pageHeight + pageGap));
+      }
+
+      return canvas;
+    }
+
+    function drawAnswerImage(settings, problems) {
+      const width = 1240;
+      const height = 1754;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      drawPageBackground(ctx, width, height);
+
+      const title = settings.title ? `${settings.title} 答案` : "答案";
+      drawCenteredText(ctx, title, 130, "700 38px Arial, sans-serif", "#111827", width);
+
+      const marginX = 110;
+      const y = 235;
+      const columns = 4;
+      const columnGap = 42;
+      const columnWidth = (width - marginX * 2 - columnGap * (columns - 1)) / columns;
+      const rows = Math.ceil(problems.length / columns);
+      const rowHeight = Math.min(54, Math.floor((height - y - 100) / rows));
+      ctx.font = "24px Arial, sans-serif";
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "left";
+
+      problems.forEach((problem, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        const x = marginX + column * (columnWidth + columnGap);
+        const lineY = y + row * rowHeight;
+        ctx.fillStyle = "#98a2b3";
+        ctx.font = "18px Arial, sans-serif";
+        ctx.fillText(`${index + 1}.`, x, lineY);
+        ctx.fillStyle = "#111827";
+        ctx.font = "24px Arial, sans-serif";
+        ctx.fillText(`${problem.a} ${opSymbol(problem.op)} ${problem.b} = ${problem.answer}`, x + 48, lineY);
+      });
+
+      return canvas;
+    }
+
+    function downloadCanvas(canvas, filename) {
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = canvas.toDataURL("image/png");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function exportImage(type) {
+      if (!currentSettings || currentProblems.length === 0 || settingsDirty) {
+        regenerate();
+      }
+
+      if (type === "questions") {
+        downloadCanvas(drawQuestionImage(currentSettings, currentProblems), "math-questions.png");
+      } else if (currentSettings.includeAnswers) {
+        downloadCanvas(drawAnswerImage(currentSettings, currentProblems), "math-answers.png");
+      }
+    }
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      regenerate();
+    });
+
+    form.addEventListener("change", () => {
+      updateControlAvailability();
+      settingsDirty = true;
+    });
+
+    questionCount.addEventListener("change", () => {
+      updateControlAvailability();
+      if (questionCount.value === "custom") {
+        customCount.focus();
+      }
+    });
+
+    document.getElementById("printButton").addEventListener("click", () => {
+      if (!currentSettings || currentProblems.length === 0 || settingsDirty) {
+        regenerate();
+      }
+      window.print();
+    });
+
+    document.getElementById("exportQuestions").addEventListener("click", () => {
+      exportImage("questions");
+    });
+
+    exportAnswersButton.addEventListener("click", () => {
+      exportImage("answers");
+    });
+
+    window.addEventListener("resize", updatePreviewScale);
+    if ("ResizeObserver" in window && previewStage) {
+      new ResizeObserver(updatePreviewScale).observe(previewStage);
+    }
+
+    updateControlAvailability();
+    regenerate();
+  </script>
+</body>
+</html>
